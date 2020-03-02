@@ -87,10 +87,10 @@ for (j in 1:d) {
 # add y columns
 responseVars <- c('HC','SC','RK','TRASH.GENERAL','GROUPER.TOTAL','SNAPPER','PENCIL.URCHIN','PARROTFISH',
                   'MORAY.EEL','LOBSTER','CORAL.DAMAGE.OTHER','BUTTERFLYFISH')
-allAntrho <- cbind(anthroDF, df[responseVars])
+allAnthro <- cbind(anthroDF, df[responseVars])
 
 # save data
-saveRDS(allAnthro, file = "miceAnthro.rds")
+save(allAnthro, file = "miceAnthro.RData")
 
 
 
