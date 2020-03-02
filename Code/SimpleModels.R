@@ -59,10 +59,53 @@ n.na
 
 #fit.pois <- glm(Grouper.model,data=df,family="poisson")
 
+#######################################
+#######################################
+# Create clean MICE data
+#######################################
+#######################################
+# load package
+pacman::p_load(mice)
+
+# remove duplicate column (COMMERCIAL.FISHING)
+df = df[,-51]
+
+# impute values
+anthroDF <- df[,names(df) %in% c('GROUPER.TOTAL', 'WATER.TEMP.AT.SURFACE','DYNAMITE.FISHING','POISON.FISHING','AQUARIUM.FISH.COLLECTION',
+               'HARVEST.OF.INVERTS.FOR.FOOD','HARVEST.OF.INVERTS.FOR.CURIO','TOURIST.DIVING.SNORKELING',
+               'SEWAGE.POLLUTION','INDUSTRIAL.POLLUTION','COMMERCIAL.FISHING','LIVE.FOOD.FISHING+YACHTS')]
+mice.anthro <- mice(anthroDF)
+
+# replace data with mice imputed data
+d <- ncol(anthroDF)
+for (j in 1:d) {
+  if (any(is.na(anthroDF[,j]))) {
+    anthroDF[is.na(anthroDF[,j]),j] <- mice.anthro$imp[[j]][,1]
+  }
+}
+
+# add y columns
+responseVars <- c('HC','SC','RK','TRASH.GENERAL','GROUPER.TOTAL','SNAPPER','PENCIL.URCHIN','PARROTFISH',
+                  'MORAY.EEL','LOBSTER','CORAL.DAMAGE.OTHER','BUTTERFLYFISH')
+allAntrho <- cbind(anthroDF, df[responseVars])
+
+# save data
+saveRDS(allAnthro, file = "miceAnthro.rds")
+
+
+
+
+#######################################
+#######################################
 # create train/test split
+#######################################
+#######################################
+pacman::p_load(caTools)
 sample = sample.split(df$GROUPER.TOTAL, SplitRatio = .75)
 train = subset(df, sample == TRUE)
 test  = subset(df, sample == FALSE)
+
+
 
 #######################################
 #######################################
@@ -70,7 +113,6 @@ test  = subset(df, sample == FALSE)
 #######################################
 #######################################
 pacman::p_load(mice)
-pacman::p_load(pscl)
 
 # GROUPER TOTAL
 fit.pois <- glm(GROUPER.TOTAL~WATER.TEMP.AT.SURFACE+DYNAMITE.FISHING+POISON.FISHING+AQUARIUM.FISH.COLLECTION+HARVEST.OF.INVERTS.FOR.FOOD+HARVEST.OF.INVERTS.FOR.CURIO+
@@ -88,7 +130,7 @@ summary(zip.fit)
 
 ############ Create train and test subsets ###########
 # train
-train.subset <- train[,names(df) %in% c('GROUPER.TOTAL', 'WATER.TEMP.AT.SURFACE','DYNAMITE.FISHING','POISON.FISHING','AQUARIUM.FISH.COLLECTION',
+train.subset <- train[,names(train) %in% c('GROUPER.TOTAL', 'WATER.TEMP.AT.SURFACE','DYNAMITE.FISHING','POISON.FISHING','AQUARIUM.FISH.COLLECTION',
                'HARVEST.OF.INVERTS.FOR.FOOD','HARVEST.OF.INVERTS.FOR.CURIO','TOURIST.DIVING.SNORKELING',
                'SEWAGE.POLLUTION','INDUSTRIAL.POLLUTION','COMMERCIAL.FISHING','LIVE.FOOD.FISHING+YACHTS')]
 train.subset <- train.subset[,-11]
@@ -128,44 +170,80 @@ zip.fit.imp1 <- zeroinfl(GROUPER.TOTAL ~ WATER.TEMP.AT.SURFACE+DYNAMITE.FISHING+
                     data = trainImputed)
 
 # test (check if can predict with NA - else, impute testing data also)
-test = subset(test, DYNAMITE.FISHING != '1.0')
+test = subset(testImputed, DYNAMITE.FISHING != '1.0')
 pred <- predict(zip.fit.imp1, test)
-cor(pred, test$GROUPER.TOTAL)
+cor(pred, test$GROUPER.TOTAL) # 0.049
 
+summary(pred)
+summary(test$GROUPER.TOTAL)
+
+#############
+###############
+###############
+##############
 ##############
 # RKC
 fit.pois <- glm(RK~WATER.TEMP.AT.SURFACE+DYNAMITE.FISHING+POISON.FISHING+AQUARIUM.FISH.COLLECTION+HARVEST.OF.INVERTS.FOR.FOOD+HARVEST.OF.INVERTS.FOR.CURIO+
-TOURIST.DIVING.SNORKELING+SEWAGE.POLLUTION+INDUSTRIAL.POLLUTION+COMMERCIAL.FISHING+LIVE.FOOD.FISHING+YACHTS,
-                data=df, subset=df$RK>0,family='poisson')
+                  TOURIST.DIVING.SNORKELING+SEWAGE.POLLUTION+INDUSTRIAL.POLLUTION+COMMERCIAL.FISHING+LIVE.FOOD.FISHING+YACHTS,
+                data=train, subset=df$RK>0,family='poisson')
 
 summary(fit.pois)
 
 # perform zero inflated pois
 zip.fit <- zeroinfl(RK ~ WATER.TEMP.AT.SURFACE+DYNAMITE.FISHING+POISON.FISHING+AQUARIUM.FISH.COLLECTION+HARVEST.OF.INVERTS.FOR.FOOD+HARVEST.OF.INVERTS.FOR.CURIO+
                       TOURIST.DIVING.SNORKELING+SEWAGE.POLLUTION+INDUSTRIAL.POLLUTION+COMMERCIAL.FISHING+LIVE.FOOD.FISHING+YACHTS, 
-                      data = df)
+                    data = train)
 
 summary(zip.fit)
 
-df.subset <- df[,names(df) %in% c('RK', 'WATER.TEMP.AT.SURFACE','DYNAMITE.FISHING','POISON.FISHING','AQUARIUM.FISH.COLLECTION',
-               'HARVEST.OF.INVERTS.FOR.FOOD','HARVEST.OF.INVERTS.FOR.CURIO','TOURIST.DIVING.SNORKELING',
-               'SEWAGE.POLLUTION','INDUSTRIAL.POLLUTION','COMMERCIAL.FISHING','LIVE.FOOD.FISHING+YACHTS')]
-df.subset <- df.subset[,-11]
+############ Create train and test subsets ###########
+# train
+train.subset <- train[,names(df) %in% c('RK', 'WATER.TEMP.AT.SURFACE','DYNAMITE.FISHING','POISON.FISHING','AQUARIUM.FISH.COLLECTION',
+                                        'HARVEST.OF.INVERTS.FOR.FOOD','HARVEST.OF.INVERTS.FOR.CURIO','TOURIST.DIVING.SNORKELING',
+                                        'SEWAGE.POLLUTION','INDUSTRIAL.POLLUTION','COMMERCIAL.FISHING','LIVE.FOOD.FISHING+YACHTS')]
+train.subset <- train.subset[,-11]
 
-impute.data <- mice(df.subset,m=5)
+impute.data <- mice(train.subset,m=5)
 
-df1 <- df.subset
-d <- ncol(df.subset)
+# replace data with mice imputed data
+trainImputed <- train.subset
+d <- ncol(train.subset)
 for (j in 1:d) {
-  if (any(is.na(df1[,j]))) {
-    df1[is.na(df1[,j]),j] <- impute.data$imp[[j]][,1]
+  if (any(is.na(trainImputed[,j]))) {
+    trainImputed[is.na(trainImputed[,j]),j] <- impute.data$imp[[j]][,1]
   }
 }
 
+# test
+test.subset <- test[,names(df) %in% c('RK', 'WATER.TEMP.AT.SURFACE','DYNAMITE.FISHING','POISON.FISHING','AQUARIUM.FISH.COLLECTION',
+                                      'HARVEST.OF.INVERTS.FOR.FOOD','HARVEST.OF.INVERTS.FOR.CURIO','TOURIST.DIVING.SNORKELING',
+                                      'SEWAGE.POLLUTION','INDUSTRIAL.POLLUTION','COMMERCIAL.FISHING','LIVE.FOOD.FISHING+YACHTS')]
+test.subset <- test.subset[,-11]
+
+impute.data <- mice(test.subset,m=5)
+
+# replace data with mice imputed data
+testImputed <- test.subset
+d <- ncol(test.subset)
+for (j in 1:d) {
+  if (any(is.na(testImputed[,j]))) {
+    testImputed[is.na(testImputed[,j]),j] <- impute.data$imp[[j]][,1]
+  }
+}
+
+############# Model with imputed vals
 # zero inflated
 zip.fit.imp1 <- zeroinfl(RK ~ WATER.TEMP.AT.SURFACE+DYNAMITE.FISHING+POISON.FISHING+AQUARIUM.FISH.COLLECTION+HARVEST.OF.INVERTS.FOR.FOOD+HARVEST.OF.INVERTS.FOR.CURIO+
-                      TOURIST.DIVING.SNORKELING+SEWAGE.POLLUTION+INDUSTRIAL.POLLUTION+COMMERCIAL.FISHING, 
-                    data = df1)
+                           TOURIST.DIVING.SNORKELING+SEWAGE.POLLUTION+INDUSTRIAL.POLLUTION+COMMERCIAL.FISHING, 
+                         data = trainImputed)
+
+# test (check if can predict with NA - else, impute testing data also)
+test = subset(testImputed, DYNAMITE.FISHING != '1.0')
+pred <- predict(zip.fit.imp1, test)
+cor(pred, test$RK) 
+
+summary(pred)
+summary(test$RK)
 
 
 ##################################
