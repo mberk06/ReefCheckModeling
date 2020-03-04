@@ -92,15 +92,14 @@ allAnthro <- cbind(anthroDF, df[responseVars])
 # save data
 save(allAnthro, file = "miceAnthro.RData")
 
-
-
-
 #######################################
 #######################################
 # create train/test split
 #######################################
 #######################################
 pacman::p_load(caTools)
+
+df$GROUPER.TOTAL <- round(df$GROUPER.TOTAL)
 sample = sample.split(df$GROUPER.TOTAL, SplitRatio = .75)
 train = subset(df, sample == TRUE)
 test  = subset(df, sample == FALSE)
@@ -122,7 +121,7 @@ TOURIST.DIVING.SNORKELING+SEWAGE.POLLUTION+INDUSTRIAL.POLLUTION+COMMERCIAL.FISHI
 summary(fit.pois)
 
 # perform zero inflated pois
-zip.fit <- zeroinfl(GROUPER.TOTAL ~ WATER.TEMP.AT.SURFACE+DYNAMITE.FISHING+POISON.FISHING+AQUARIUM.FISH.COLLECTION+HARVEST.OF.INVERTS.FOR.FOOD+HARVEST.OF.INVERTS.FOR.CURIO+
+zip.fit <- zeroinfl(GROUPER.TOTAL ~ SILTATION+WATER.TEMP.AT.SURFACE+DYNAMITE.FISHING+POISON.FISHING+AQUARIUM.FISH.COLLECTION+HARVEST.OF.INVERTS.FOR.FOOD+HARVEST.OF.INVERTS.FOR.CURIO+
                       TOURIST.DIVING.SNORKELING+SEWAGE.POLLUTION+INDUSTRIAL.POLLUTION+COMMERCIAL.FISHING+LIVE.FOOD.FISHING+YACHTS, 
                       data = train)
 
@@ -266,7 +265,7 @@ test  = subset(noNAGrouperDF, sample == FALSE)
 
 # NOTE - SILTATION IS ALL NA
 # create formula
-anthroString = paste(anthro.vars[2:length(anthro.vars)], collapse=' + ')
+anthroString = paste(anthro.vars, collapse=' + ')
 formula = as.formula(paste("GROUPER.TOTAL ~ ",anthroString, sep = ""))
 
 # model (rough NA imputation)
@@ -280,7 +279,7 @@ rfRough # var explained: 12% (NA in y removed)
 summary(rfRough) 
 
 # get pred and accuracy (CANNOT PRED BECAUSE OF NA)
-#pred = predict(rfRough, newdata=subset(test,select=-c(GROUPER.TOTAL)))
+pred = predict(rfRough, newdata=subset(test,select=-c(GROUPER.TOTAL)))
 #cor(pred, test$GROUPER.TOTAL)
 
 # get output tree
@@ -306,7 +305,6 @@ summary(rfImpute)
 pred = predict(rfImpute, newdata=subset(imputeDFTest,select=-c(GROUPER.TOTAL)))
 cor(pred, imputeDFTest$GROUPER.TOTAL) # 0.522
 #getTree(rfImpute, 1, labelVar=TRUE)
-
 
 
 
