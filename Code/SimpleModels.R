@@ -46,14 +46,14 @@ temp.vars <-  toupper(c("Water.temp.at.surface","Water.temp.at.5m","Water.temp.a
 
 #names(df)[names(df) %in% temp.vars]
 
-df$GROUPER.TOTAL <- round(df$GROUPER.TOTAL)
+#df$GROUPER.TOTAL <- round(df$GROUPER.TOTAL)
 
-table(df$GROUPER.TOTAL)
-hist(df$GROUPER.TOTAL[df$GROUPER.TOTAL>0])
+#table(df$GROUPER.TOTAL)
+#hist(df$GROUPER.TOTAL[df$GROUPER.TOTAL>0])
 
-sapply(df[,names(df) %in% c(anthro.vars,temp.vars)],function(x){length(table(x))})
-n.na <- sapply(df[,names(df) %in% c(anthro.vars,temp.vars)],function(x){sum(is.na(x))})
-n.na
+#sapply(df[,names(df) %in% c(anthro.vars,temp.vars)],function(x){length(table(x))})
+#n.na <- sapply(df[,names(df) %in% c(anthro.vars,temp.vars)],function(x){sum(is.na(x))})
+#n.na
 
 #Grouper.model <- paste("GROUPER.TOTAL~",paste(anthro.vars,collapse='+'),paste(temp.vars,collapse='+'),sep="+") 
 
@@ -103,7 +103,6 @@ df$GROUPER.TOTAL <- round(df$GROUPER.TOTAL)
 sample = sample.split(df$GROUPER.TOTAL, SplitRatio = .75)
 train = subset(df, sample == TRUE)
 test  = subset(df, sample == FALSE)
-
 
 
 #######################################
