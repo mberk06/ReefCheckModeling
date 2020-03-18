@@ -108,12 +108,13 @@ dfCaribbean <- subset(df, df$COUNTRY %in% caribbeanCountries & df$OCEAN == 'ATLA
 ##############################
 ##############################
 # SET CORRECT DF (Caribbean or not)
-#df <- df
-df <- dfCaribbean
+df <- df
+#df <- df[df$OCEAN == "PACIFIC" & df$GROUPER.TOTAL != 0,]
+#df <- dfCaribbean
 
 # clean response
 responseVar <- 'GROUPER.TOTAL'
-df[,responseVar] <- round(df[,responseVar])
+df[,responseVar] <- round(df[,responseVar]) # Note: only run with counts
 
 df <- subset(df, !is.na(df[,responseVar])) # drop na in y var
 organisms <- organisms[!organisms %in% c(responseVar)] # remove var from formula
@@ -132,27 +133,42 @@ test  = subset(df, sample == FALSE)
 # Poisson
 ###########################
 # perform zero inflated pois
+pacman::p_load(pscl)
 zip.fit <- zeroinfl(formula, data = train, dist = 'poisson')
 summary(zip.fit)
 
 # get correlation
 zipPred <- predict(zip.fit, newdata=test)
 cor(zipPred, test[,responseVar], use = "complete.obs")
+summary(zipPred)
+summary(test[,responseVar])
+
+# plot output 
+plot(zipPred, test[,responseVar])
+qqplot(zipPred, test[,responseVar])
 
 ###########################
 # RF
 ###########################
 # create model
+pacman::p_load(randomForest)
 rfRough <- randomForest(
   formula,
   data=train,
   na.action=na.roughfix
 )
 rfRough 
+rfRough$importance
 
 # get correlation
 rfPred <- predict(rfRough, newdata=test)
 cor(rfPred, test[,responseVar], use = "complete.obs")
+summary(rfPred)
+summary(test[,responseVar])
+
+# plot output 
+plot(rfPred, test[,responseVar])
+qqplot(rfPred, test[,responseVar])
 
 ###########################
 # TT-specific
