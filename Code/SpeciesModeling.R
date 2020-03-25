@@ -138,7 +138,7 @@ zip.fit <- zeroinfl(formula, data = train, dist = 'poisson')
 summary(zip.fit)
 
 # get correlation
-zipPred <- predict(zip.fit, newdata=test)
+zipPred <- predict(zip.fit, newdata=test, type='count')
 cor(zipPred, test[,responseVar], use = "complete.obs")
 summary(zipPred)
 summary(test[,responseVar])

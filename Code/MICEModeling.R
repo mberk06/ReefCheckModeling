@@ -42,7 +42,7 @@ pois.fit <- glm(formula, data=train[train$AQUARIUM.FISH.COLLECTION!="",],family=
 summary(pois.fit)
 
 # get preds
-poisPred <- predict(pois.fit, newdata=test)
+poisPred <- predict(pois.fit, newdata=test, type = )
 cor(poisPred, test[,responseVar], use = "complete.obs") # 0.057
 
 
