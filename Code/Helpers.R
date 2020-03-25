@@ -15,7 +15,7 @@ pacman::p_load(stringr) # str_replace
 pacman::p_load(pdp) # partial dependence plots
 pacman::p_load(vip) # variable importance plots
 pacman::p_load(car) # fancy scatter
-pacman::p_load(SparkR) # pivot
+pacman::p_load(forecast) # autoarima
 
 ##########################
 ##########################
@@ -28,7 +28,7 @@ zipFunc <- function(df, xs, y) {
   #' @param df full dataframe with all columns (dataframe)
   #' @param xs columns to make into formula (vector character)
   #' @param y response variable (character)
-  #' @return preds
+  #' @return df with true test vals and preds (data.frame)
 
   # round response variable and remove
   df[,y] <- as.integer(round(df[,y])) # convert all counts to ints
@@ -75,7 +75,7 @@ rfFunc <- function(df, xs, y) {
   #' @param df full dataframe with all columns (dataframe)
   #' @param xs columns to make into formula (vector character)
   #' @param y response variable (character)
-  #' @return preds
+  #' @return df with true test vals and preds (data.frame)
 
   # round response variable and remove
   if (y %in% c(subsetCols('organism'))) {
@@ -114,12 +114,99 @@ rfFunc <- function(df, xs, y) {
   varImpPlot(fit)
   xs <- unlist(strsplit(xs, "[+]"))
   for (i in 1:length(xs)) {
+    print(i)
     partialPlot(fit, train[!is.na(train[,xs[i]]),], xs[i], 
                 xlab = xs[i], ylab = y,
                 main = paste0(c("Partial Dependence on ", y, " vs. ", xs[i])))
   }
   
   return (data.frame(y = test[,y], yPred = pred))
+}
+
+##########################
+##########################
+# TS
+##########################
+##########################
+timeSeries <- function(df, y, lm=T, aa=T) {
+  #' perform linear regression/auto.arima using one column and/or date, 
+  #' print model summary for lm/auto.arima
+  #'
+  #' @param df full dataframe with all columns (dataframe)
+  #' @param y response variable (character)
+  #' @param lm run linear model (bool)
+  #' @param aa run autoarima model (bool)
+
+  # round response variable and remove
+  if (y %in% c(subsetCols('organism'))) {
+    df[,y] <- as.integer(round(df[,y])) # round all counts
+  }
+  df <- subset(df, !is.na(df[,y])) # drop na in y var
+  
+  # agg by days
+  cols <- c(subsetCols('organism'), 'DATE', subsetCols('substrate'), subsetCols('anthro'))
+  dfToPivot <- df[,cols]
+  aggDF <- aggregate(get(y) ~ DATE, data = dfToPivot, FUN = mean)
+  
+  # convert date to Date and sort
+  aggDF$DATE <- as.Date(aggDF$DATE)
+  aggDF <- aggDF[order(aggDF$DATE),]
+  df <- aggDF; names(df) <- c("DATE", y)
+  
+  # create train and test split
+  train = subset(df, df$DATE < as.Date("2016-08-09"))
+  test = subset(df, df$DATE >= as.Date("2016-08-09"))
+  
+  ##########
+  # run lm
+  if (lm) {
+    # train model
+    fit <- lm(get(y) ~ DATE, data = train)
+    print(summary(fit))
+    
+    # get preds
+    pred <- round(predict(fit, newdata=test))
+    
+    # check if coef is too small to create preds
+    if (all(pred == pred[1])) {
+      print("All preds for lm are the same (coefficient too small)")
+    } else {
+      # get correlation
+      rsquare <- cor(pred, test[,y], use = "complete.obs")
+      corStr = paste0(c('cor',round(rsquare, 3)), collapse = ': ')
+      print(corStr)
+      
+      # plot output 
+      plot(pred, test[,y], main=paste(c(y,'predicted against true')), xlab='yhat', ylab='y')
+      abline(lm(test[,y] ~ pred), col="red") # regression line (y~x)
+      text(x = 8, y = max(test[,y])-10, corStr, col = 'red', cex=0.8)#labels=paste0(c('r^2: ',rsquare)))
+      qqplot(pred, test[,y])
+    }
+  }
+  
+  ##########
+  # run autoarima 
+  if (aa) {
+    # setup vars
+    h = 20 # num days to predict into the future 
+    
+    # train
+    aaFit <- auto.arima(train[,y])
+    print(summary(aaFit))
+    
+    # get preds
+    aaPreds <- forecast(aFit,h=h)
+    plot(aaPreds)
+    
+    # get traning accuracy
+    print(accuracy(aaPreds))
+    print(cor(train[,y], aaFit$fitted))
+    
+    # get testing accuracy
+    if (dim(test)[1] >= h) {
+      print(cor(test[1:h,y], aaPreds$mean))
+    }
+  }
 }
 
 ##########################

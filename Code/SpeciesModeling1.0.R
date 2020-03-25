@@ -23,13 +23,13 @@ miceDF <- loadDF(MICE=T)
 ######################
 # setup xs and y (only change these lines)
 df <- originalDF
-xs <- anthro
+xs <- both
 y <- 'BUTTERFLYFISH'
 
 # call model
 out <- zipFunc(df, xs, y)
-true <- out[,1]
-yPreds <- out[,2]
+#true <- out[,1]
+#yPreds <- out[,2]
 
 # subset to non-zeros
 #PREDS <- subset(data.frame(true = true, pred = yPreds), pred > 20 & pred < 45)
