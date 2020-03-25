@@ -14,7 +14,7 @@ caribbeanCountries <- c('USA-FL','BARBADOS','MEXICO','COLOMBIA','DOMIHCCA','BELI
                         'BVI','CAYMAN ISLANDS','JAMAICA','TRIHCDAD & TOBAGO','ST LUCIA','ST VINCENT & GRENADINES','GRENADA',
                         'ANTIGUA','PUERTO RICO','USVI','ANGUILLA','BARBUDA','VENEZUELA','DOMIHCCAN REPUBLIC','ARUBA','TUHCS & CAICOS',
                         'PANAMA','CUBA','BAHAMAS','HAITI','COSTA RICA','GUATEMALA')
-dfCaribbean <- subset(df, df$COUNTRY %in% caribbeanCountries & df$OCEAN == 'ATLANTIC')
+dfCaribbean <- subset(originalDF, originalDF$COUNTRY %in% caribbeanCountries & originalDF$OCEAN == 'ATLANTIC')
 df <- dfCaribbean
 
 ######################
@@ -32,6 +32,6 @@ df <- originalDF
 y <- 'BUTTERFLYFISH'
 
 # call model and print output
-out <- timeSeries(df, y, lm=F, aa=T)
+out <- timeSeries(df, y, lm=T, aa=T)
 
 

@@ -282,7 +282,7 @@ subsetCols <- function(subsetType) {
                           'Commercial fishing?', 'Recreational fishing?', 'Invertebrate/shell collection?', 'Anchoring?', 'Diving?')
   subsets[['anthro']] <- c("WATER.TEMP.AT.SURFACE","DYNAMITE.FISHING","POISON.FISHING","AQUARIUM.FISH.COLLECTION","HARVEST.OF.INVERTS.FOR.FOOD",
                             "HARVEST.OF.INVERTS.FOR.CURIO","TOURIST.DIVING.SNORKELING","SEWAGE.POLLUTION",
-                            "INDUSTRIAL.POLLUTION","COMMERCIAL.FISHING",
+                            "INDUSTRIAL.POLLUTION",
                             'SILTATION','RECREATIONAL.FISHING','INVERTEBRATE.SHELL.COLLECTION', 'ANCHORING?', 
                             'DIVING?',"TRASH.FISH.NETS","TRASH.GENERAL","CORAL.DAMAGE.ANCHOR","CORAL.DAMAGE.DYNAMITE",
                             "CORAL.DAMAGE.OTHER","SPEARFISHING") 
@@ -320,7 +320,7 @@ subsetCols <- function(subsetType) {
   subsets[['percentile']] <- unlist(lapply(names(df), function(x) x[grepl("PERCENTILE", x)]))
   
   # create factors for ordering
-  subsets[['f1']] <- c('ANCHORING','DIVING','RECREATIONAL.FISHING','INVERTEBRATE.SHELL.COLLECTION','SPEARFISHING','COMMERCIAL.FISHING')# yes/no factors
+  subsets[['f1']] <- c('ANCHORING','DIVING','RECREATIONAL.FISHING','INVERTEBRATE.SHELL.COLLECTION','SPEARFISHING')# yes/no factors
   subsets[['f2']] <- c('SILTATION','') # ALWAYS, OFTEN, OCCASIONALLY, NEVER
   subsets[['f3']] <- c('HARVEST.OF.INVERTS.FOR.CURIO','TOURIST.DIVING.SNORKELING', # HIGH, MODERATE, LOW, NONE
                        'SEWAGE.POLLUTION','INDUSTRIAL.POLLUTION','DYNAMITE.FISHING','POISON.FISHING','AQUARIUM.FISH.COLLECTION',

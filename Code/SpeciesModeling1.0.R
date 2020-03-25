@@ -22,8 +22,8 @@ miceDF <- loadDF(MICE=T)
 # ZIP
 ######################
 # setup xs and y (only change these lines)
-df <- miceDF
-xs <- names(miceDF) # anthro, organism, both, names(miceDF)
+df <- originalDF
+xs <- both # anthro, organism, both, names(miceDF)
 y <- 'BUTTERFLYFISH'
 
 # call model
