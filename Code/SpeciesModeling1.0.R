@@ -22,8 +22,8 @@ miceDF <- loadDF(MICE=T)
 # ZIP
 ######################
 # setup xs and y (only change these lines)
-df <- originalDF
-xs <- both
+df <- miceDF
+xs <- names(miceDF) # anthro, organism, both, names(miceDF)
 y <- 'BUTTERFLYFISH'
 
 # call model
@@ -39,12 +39,12 @@ out <- zipFunc(df, xs, y)
 # RF
 ######################
 # setup xs and y (only change these lines)
-df <- originalDF
-xs <- both
-y <- 'BUTTERFLYFISH'
+df <- miceDF
+xs <- names(miceDF) # anthro, organism, both, names(miceDF)
+y <- 'HC'
 
 # call model
 out <- rfFunc(df, xs, y)
-true <- out[,1]
-yPreds <- out[,2]
+#true <- out[,1]
+#yPreds <- out[,2]
 

@@ -242,6 +242,23 @@ loadDF <- function(MICE=FALSE) {
   names(df) <- str_replace(names(df), "[>]", "")
   names(df) <- str_replace(names(df), "[<]", "")
   if (!MICE) {df <- df[!(df['SILTATION']=='0.0' & !is.na(df['SILTATION'])),]} # remove single problem row
+  if (MICE) {df <- df[!(df['HARVEST.OF.INVERTS.FOR.FOOD']=='' & df$DYNAMITE.FISHING=="1.0"),]}
+  
+  # get factors to order
+  f1 <- subsetCols('f1')
+  f2 <- subsetCols('f2')
+  f3 <- subsetCols('f3')
+  
+  # iterate through columns and recode factors 
+  for (c in names(df)) {
+    if (c %in% f1) {
+      df[,c] <- factor(df[,c], levels=c('YES', 'NO'))
+    } else if (c %in% f2) {
+      df[,c] <- ordered(df[,c], levels=c('NEVER','OCCASIONALLY','OFTEN','ALWAYS'))
+    } else if (c %in% f3) {
+      df[,c] <- ordered(df[,c], levels=c('NONE','LOW','MODERATE','HIGH'))
+    }
+  }
   
   return(df)
 }
@@ -268,7 +285,7 @@ subsetCols <- function(subsetType) {
                             "INDUSTRIAL.POLLUTION","COMMERCIAL.FISHING",
                             'SILTATION','RECREATIONAL.FISHING','INVERTEBRATE.SHELL.COLLECTION', 'ANCHORING?', 
                             'DIVING?',"TRASH.FISH.NETS","TRASH.GENERAL","CORAL.DAMAGE.ANCHOR","CORAL.DAMAGE.DYNAMITE",
-                            "CORAL.DAMAGE.OTHER") 
+                            "CORAL.DAMAGE.OTHER","SPEARFISHING") 
   subsets[['organismAll']] <- c('ARABIAN.BUTTERFLYFISH','ASPERGILLOSIS','BANDED.CORAL.SHRIMP','BARRACUDA',
                               'BARRAMUNDI.COD','BLACK.BAND','BLACK.BAND','BLACK.SPOTTED.GRUNT',
                               'BLACK.URCHIN','BLEACHING.PER.OF.COLONY','BLEACHING.PER.OF.POPULATION',
@@ -301,6 +318,13 @@ subsetCols <- function(subsetType) {
                              'DIADEMA','BUTTERFLYFISH','BUMPHEAD.PARROT','BARRAMUNDI.COD','BANDED.CORAL.SHRIMP','BLEACHING....OF.COLONY',
                              'BLEACHING....OF.POPULATION') 
   subsets[['percentile']] <- unlist(lapply(names(df), function(x) x[grepl("PERCENTILE", x)]))
+  
+  # create factors for ordering
+  subsets[['f1']] <- c('ANCHORING','DIVING','RECREATIONAL.FISHING','INVERTEBRATE.SHELL.COLLECTION','SPEARFISHING','COMMERCIAL.FISHING')# yes/no factors
+  subsets[['f2']] <- c('SILTATION','') # ALWAYS, OFTEN, OCCASIONALLY, NEVER
+  subsets[['f3']] <- c('HARVEST.OF.INVERTS.FOR.CURIO','TOURIST.DIVING.SNORKELING', # HIGH, MODERATE, LOW, NONE
+                       'SEWAGE.POLLUTION','INDUSTRIAL.POLLUTION','DYNAMITE.FISHING','POISON.FISHING','AQUARIUM.FISH.COLLECTION',
+                       'HARVEST.OF.INVERTS.FOR.FOOD')
 
   # return if in susbets
   if (subsetType %in% names(subsets)) {
