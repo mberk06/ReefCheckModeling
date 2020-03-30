@@ -61,7 +61,41 @@ temp.vars <-  toupper(c("Water.temp.at.surface","Water.temp.at.5m","Water.temp.a
 
 #######################################
 #######################################
-# Create clean MICE data
+# Create clean MICE data ALL
+#######################################
+#######################################
+# load package
+pacman::p_load(mice)
+
+# remove duplicate column (COMMERCIAL.FISHING)
+df = df[,-51]
+
+# impute values
+anthroDF <- df[,names(df) %in% c('GROUPER.TOTAL', 'WATER.TEMP.AT.SURFACE','DYNAMITE.FISHING','POISON.FISHING','AQUARIUM.FISH.COLLECTION',
+               'HARVEST.OF.INVERTS.FOR.FOOD','HARVEST.OF.INVERTS.FOR.CURIO','TOURIST.DIVING.SNORKELING',
+               'SEWAGE.POLLUTION','INDUSTRIAL.POLLUTION','COMMERCIAL.FISHING','LIVE.FOOD.FISHING+YACHTS')]
+mice.anthro <- mice(anthroDF)
+
+# replace data with mice imputed data
+d <- ncol(anthroDF)
+for (j in 1:d) {
+  if (any(is.na(anthroDF[,j]))) {
+    anthroDF[is.na(anthroDF[,j]),j] <- mice.anthro$imp[[j]][,1]
+  }
+}
+
+# add y columns
+responseVars <- c('HC','SC','RK','TRASH.GENERAL','GROUPER.TOTAL','SNAPPER','PENCIL.URCHIN','PARROTFISH',
+                  'MORAY.EEL','LOBSTER','CORAL.DAMAGE.OTHER','BUTTERFLYFISH')
+allAnthro <- cbind(anthroDF, df[responseVars])
+
+# save data
+save(allAnthro, file = "miceAnthro.RData")
+
+
+#######################################
+#######################################
+# Create clean MICE data ANTHRO
 #######################################
 #######################################
 # load package

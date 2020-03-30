@@ -16,18 +16,72 @@ pacman::p_load(pdp) # partial dependence plots
 pacman::p_load(vip) # variable importance plots
 pacman::p_load(car) # fancy scatter
 pacman::p_load(forecast) # autoarima
+pacman::p_load(mice) # MICE
+pacman::p_load(lubridate) # truncate dates
+
+##########################
+##########################
+# Poisson
+##########################
+##########################
+poisFunc <- function(df, xs, y, printAll=F) {
+  #' perform poisson regression, print model summary, and return preds
+  #'
+  #' @param df full dataframe with all columns (dataframe)
+  #' @param xs columns to make into formula (vector character)
+  #' @param y response variable (character)
+  #' @param printAll print all output and plot (bool)
+  #' @return df with true test vals and preds (data.frame)
+
+  # round response variable and remove
+  df[,y] <- as.integer(round(df[,y])) # convert all counts to ints and *160 (for substrate only)
+  df <- subset(df, !is.na(df[,y])) # drop na in y var
+  xs <- xs[!xs %in% c(y)] # remove var from formula
+  
+  # create formula
+  xs <- paste(xs, collapse="+")
+  formula <- formula(paste(c(y, xs), collapse='~'))
+  if (printAll) print(formula)
+  
+  # create train and test split
+  sample = sample.split(df[,y], SplitRatio = .75)
+  train = subset(df, sample == TRUE)
+  test  = subset(df, sample == FALSE)
+  
+  # run model
+  fit <- glm(formula, data = train, family = 'poisson')
+  if (printAll) print(summary(fit))
+  
+  # get correlation
+  pred <- round(predict(fit, newdata=test))
+  rsquare <- cor(pred, test[,y], use = "complete.obs")
+  corStr = paste0(c('cor',round(rsquare, 3)), collapse = ': ')
+  print(corStr)
+  
+  # plot output 
+  if (printAll) {
+    plot(pred, test[,y], main=paste(c(y,'predicted against true')), xlab='yhat', ylab='y')
+    abline(lm(test[,y] ~ pred), col="red") # regression line (y~x)
+    text(x = 8, y = max(test[,y])-10, corStr, col = 'red', cex=0.8)#labels=paste0(c('r^2: ',rsquare)))
+    qqplot(pred, test[,y])
+  }
+  
+  return (data.frame(y = test[,y], yPred = pred))
+}
+
 
 ##########################
 ##########################
 # ZIP
 ##########################
 ##########################
-zipFunc <- function(df, xs, y) {
+zipFunc <- function(df, xs, y, printAll=F) {
   #' perform zero-inflated poisson regression, print model summary, and return preds
   #'
   #' @param df full dataframe with all columns (dataframe)
   #' @param xs columns to make into formula (vector character)
   #' @param y response variable (character)
+  #' @param printAll print all output and plot (bool)
   #' @return df with true test vals and preds (data.frame)
 
   # round response variable and remove
@@ -38,7 +92,7 @@ zipFunc <- function(df, xs, y) {
   # create formula
   xs <- paste(xs, collapse="+")
   formula <- formula(paste(c(y, xs), collapse='~'))
-  print(formula)
+  if (printAll) print(formula)
   
   # create train and test split
   sample = sample.split(df[,y], SplitRatio = .75)
@@ -47,19 +101,21 @@ zipFunc <- function(df, xs, y) {
   
   # run model
   fit <- zeroinfl(formula, data = train, dist = 'poisson')
-  print(summary(fit))
+  if (printAll) print(summary(fit))
   
   # get correlation
-  pred <- round(predict(fit, newdata=test, se.fit=TRUE,MC=2500))
+  pred <- round(predict(fit, newdata=test))
   rsquare <- cor(pred, test[,y], use = "complete.obs")
   corStr = paste0(c('cor',round(rsquare, 3)), collapse = ': ')
   print(corStr)
   
   # plot output 
-  plot(pred, test[,y], main=paste(c(y,'predicted against true')), xlab='yhat', ylab='y')
-  abline(lm(test[,y] ~ pred), col="red") # regression line (y~x)
-  text(x = 8, y = max(test[,y])-10, corStr, col = 'red', cex=0.8)#labels=paste0(c('r^2: ',rsquare)))
-  qqplot(pred, test[,y])
+  if (printAll) {
+    plot(pred, test[,y], main=paste(c(y,'predicted against true')), xlab='yhat', ylab='y')
+    abline(lm(test[,y] ~ pred), col="red") # regression line (y~x)
+    text(x = 8, y = max(test[,y])-10, corStr, col = 'red', cex=0.8)#labels=paste0(c('r^2: ',rsquare)))
+    qqplot(pred, test[,y])
+  }
   
   return (data.frame(y = test[,y], yPred = pred))
 }
@@ -69,12 +125,14 @@ zipFunc <- function(df, xs, y) {
 # RF
 ##########################
 ##########################
-rfFunc <- function(df, xs, y) {
+rfFunc <- function(df, xs, y, PDP=F, printAll=F) {
   #' perform random forest, print model summary, and return preds
   #'
   #' @param df full dataframe with all columns (dataframe)
   #' @param xs columns to make into formula (vector character)
   #' @param y response variable (character)
+  #' @param PDP include partial dependence plots (bool)
+  #' @param printAll print all output and plot (bool)
   #' @return df with true test vals and preds (data.frame)
 
   # round response variable and remove
@@ -87,7 +145,7 @@ rfFunc <- function(df, xs, y) {
   # create formula
   xs <- paste(xs, collapse="+")
   formula <- formula(paste(c(y, xs), collapse='~'))
-  print(formula)
+  if (printAll) print(formula)
   
   # create train and test split
   sample = sample.split(df[,y], SplitRatio = .75)
@@ -96,7 +154,7 @@ rfFunc <- function(df, xs, y) {
   
   # run model
   fit <- randomForest(formula, data = train, na.action=na.roughfix)
-  print(fit)
+  if (printAll) print(fit)
   
   # get correlation
   pred <- round(predict(fit, newdata=test, se.fit=TRUE,MC=2500))
@@ -105,19 +163,22 @@ rfFunc <- function(df, xs, y) {
   print(corStr)
   
   # plot output 
-  plot(pred, test[,y], main=paste(c(y,'predicted against true')), xlab='yhat', ylab='y')
-  abline(lm(test[,y] ~ pred), col="red") # regression line (y~x)
-  text(x = 8, y = max(test[,y])-10, corStr, col = 'red', cex=0.8)#labels=paste0(c('r^2: ',rsquare)))
-  qqplot(pred, test[,y])
+  if (printAll) {
+    plot(pred, test[,y], main=paste(c(y,'predicted against true')), xlab='yhat', ylab='y')
+    abline(lm(test[,y] ~ pred), col="red") # regression line (y~x)
+    text(x = 8, y = max(test[,y])-10, corStr, col = 'red', cex=0.8)#labels=paste0(c('r^2: ',rsquare)))
+    qqplot(pred, test[,y])
+  }
   
   # variable importance and PDP
-  varImpPlot(fit)
-  xs <- unlist(strsplit(xs, "[+]"))
-  for (i in 1:length(xs)) {
-    print(i)
-    partialPlot(fit, train[!is.na(train[,xs[i]]),], xs[i], 
-                xlab = xs[i], ylab = y,
-                main = paste0(c("Partial Dependence on ", y, " vs. ", xs[i])))
+  if (printAll) varImpPlot(fit)
+  if (PDP) {
+    xs <- unlist(strsplit(xs, "[+]"))
+    for (i in 1:length(xs)) {
+      partialPlot(fit, train[!is.na(train[,xs[i]]),], xs[i], 
+                  xlab = xs[i], ylab = y,
+                  main = paste0(c("Partial Dependence on ", y, " vs. ", xs[i])))
+    }
   }
   
   return (data.frame(y = test[,y], yPred = pred))
@@ -128,12 +189,13 @@ rfFunc <- function(df, xs, y) {
 # TS
 ##########################
 ##########################
-timeSeries <- function(df, y, lm=T, aa=T) {
+timeSeries <- function(df, y, h, lm=T, aa=T) {
   #' perform linear regression/auto.arima using one column and/or date, 
   #' print model summary for lm/auto.arima
   #'
   #' @param df full dataframe with all columns (dataframe)
   #' @param y response variable (character)
+  #' @param h number of days to forecast in the future (int)
   #' @param lm run linear model (bool)
   #' @param aa run autoarima model (bool)
 
@@ -143,26 +205,23 @@ timeSeries <- function(df, y, lm=T, aa=T) {
   }
   df <- subset(df, !is.na(df[,y])) # drop na in y var
   
-  # agg by days
-  cols <- c(subsetCols('organism'), 'DATE', subsetCols('substrate'), subsetCols('anthro'))
-  dfToPivot <- df[,cols]
-  aggDF <- aggregate(get(y) ~ DATE, data = dfToPivot, FUN = mean)
-  
-  # convert date to Date and sort
-  aggDF$DATE <- as.Date(aggDF$DATE)
-  aggDF <- aggDF[order(aggDF$DATE),]
-  df <- aggDF; names(df) <- c("DATE", y)
-  
   # create train and test split
-  train = subset(df, df$DATE < as.Date("2016-08-09"))
-  test = subset(df, df$DATE >= as.Date("2016-08-09"))
+  if (is.Date(df$DATE)) {
+    train = subset(df, df$DATE < "2016-08-09")
+    test = subset(df, df$DATE >= "2016-08-09")
+  } else {
+    train = subset(df, df$DATE < 2016)
+    test = subset(df, df$DATE >= 2017)
+  }
   
   ##########
   # run lm
   if (lm) {
+    print("Linear Model...")
     # train model
     fit <- lm(get(y) ~ DATE, data = train)
-    print(summary(fit))
+    print(paste0(c("Date coefficient", fit$coefficients[[2]]), collapse = ": "))
+    print(paste0(c("Adjusted R-Squared", summary(fit)[[9]]), collapse = ": "))
     
     # get preds
     pred <- round(predict(fit, newdata=test))
@@ -173,7 +232,7 @@ timeSeries <- function(df, y, lm=T, aa=T) {
     } else {
       # get correlation
       rsquare <- cor(pred, test[,y], use = "complete.obs")
-      corStr = paste0(c('cor',round(rsquare, 3)), collapse = ': ')
+      corStr = paste0(c('Testing Correlation',round(rsquare, 3)), collapse = ': ')
       print(corStr)
       
       # plot output 
@@ -181,32 +240,65 @@ timeSeries <- function(df, y, lm=T, aa=T) {
       abline(lm(test[,y] ~ pred), col="red") # regression line (y~x)
       text(x = 8, y = max(test[,y])-10, corStr, col = 'red', cex=0.8)#labels=paste0(c('r^2: ',rsquare)))
       qqplot(pred, test[,y])
+      print('-------------------------')
     }
   }
   
   ##########
   # run autoarima 
   if (aa) {
-    # setup vars
-    h = 20 # num days to predict into the future 
-    
+    print("Auto ARIMA...")
     # train
     aaFit <- auto.arima(train[,y])
-    print(summary(aaFit))
+    #print(summary(aaFit))
     
     # get preds
-    aaPreds <- forecast(aFit,h=h)
+    aaPreds <- forecast(aaFit,h=h)
     plot(aaPreds)
     
     # get traning accuracy
-    print(accuracy(aaPreds))
-    print(cor(train[,y], aaFit$fitted))
+    #print(paste0(c("Training Accuracy: ", accuracy(aaPreds))))
+    print(paste0(c("Training Correlation", cor(train[,y], aaFit$fitted)), collapse = ": "))
     
     # get testing accuracy
     if (dim(test)[1] >= h) {
-      print(cor(test[1:h,y], aaPreds$mean))
+      print(paste0(c("Testing Correlation: ", cor(test[1:h,y], aaPreds$mean))))
     }
   }
+}
+
+##########################
+##########################
+# create MICE dataset
+##########################
+##########################
+createMICE <- function() {
+  #' create MICE dataset and save
+  
+  # get orginal df
+  df <- loadDF(MICE=F)
+  
+  # get columns to MICE and y cols
+  miceCols <- c(subsetCols('anthro'), 'WATER.TEMP.AT.SURFACE')
+  otherCols <- c(subsetCols('organism'), subsetCols('substrate'))
+  
+  # create MICE df and run
+  dfToMICE <- df[,names(df) %in% miceCols]
+  miceDF <- mice(dfToMICE)
+  
+  # replace data with mice imputed data
+  d <- ncol(dfToMICE)
+  for (j in 1:d) {
+    if (any(is.na(dfToMICE[,j]))) {
+      dfToMICE[is.na(dfToMICE[,j]),j] <- miceDF$imp[[j]][,1]
+    }
+  }
+  
+  # add response vars
+  final <- cbind(dfToMICE, df[,otherCols])
+  
+  # save
+  save(final, file = "Data/miceAnthro.RData")
 }
 
 ##########################
@@ -217,7 +309,7 @@ timeSeries <- function(df, y, lm=T, aa=T) {
 loadDF <- function(MICE=FALSE) {
   #' load data and return
   
-  # parse user
+  # parse user (also run in Species modeling - but kept for modularization)
   if (dir.exists("/Users/michaelberk")) {
     setwd('~/Documents/Penn 2019-2020/Senior Thesis/Scripts/ReefCheckModeling/')
   } else {
@@ -227,7 +319,7 @@ loadDF <- function(MICE=FALSE) {
   # return MICEd df or non-MICED
   if (MICE) {
     load("Data/miceAnthro.RData") 
-    df <- allAnthro
+    df <- final
   } else {
     df <- read.csv('Data/df1.0.csv')
   }
@@ -265,6 +357,54 @@ loadDF <- function(MICE=FALSE) {
 
 ##########################
 ##########################
+# load data
+##########################
+##########################
+aggDF <- function(df, y, timeFrame) {
+  #' aggreagte df for timeframe
+  #' 
+  #' @param df data.frame to be aggregated (data.frame)
+  #' @param y y variable col name to be modeled (character)
+  #' @param timeframe determine the interval to agg data (character)
+  #' @return aggregated df for given timeframe (data.frame)
+  
+  # parse timeframe
+  if (timeFrame == 'DATE') {
+    df$DATE <- as.Date(df$DATE)
+  } else if (timeFrame == 'WEEK') {
+    df$WEEK <- round_date(as.Date(df$DATE), 'week')
+  } else if (timeFrame == 'MONTH') {
+    df$MONTH <- round_date(as.Date(df$DATE), 'month') 
+  } else if (timeFrame == 'QUARTER') {
+    df$QUARTER <- round_date(as.Date(df$DATE), '3 months')
+  } else if (timeFrame == 'BIANNUAL') {
+    df$BIANNUAL <- round_date(as.Date(df$DATE), '6 months')
+  } else if (timeFrame == 'YEAR') {
+  } else {
+    print('Incorrect timeframe')
+    return()
+  }
+  
+  # aggregate df
+  cols <- c(subsetCols('organism'), timeFrame, subsetCols('substrate'), subsetCols('anthro'))
+  dfToPivot <- df[,cols]
+  aggDF <- aggregate(get(y) ~ get(timeFrame), data = dfToPivot, FUN = mean)
+  
+  # rename cols
+  names(aggDF) <- c("DATE", y)
+  
+  # convert Date (if necessary) and sort
+  if (timeFrame != 'YEAR') {
+    aggDF$DATE <- as.Date(aggDF$DATE)
+  }
+  aggDF <- aggDF[order(aggDF$DATE),]
+  
+  # return
+  return(aggDF)
+}
+
+##########################
+##########################
 # get column name subsets
 ##########################
 ##########################
@@ -280,7 +420,7 @@ subsetCols <- function(subsetType) {
                           'Harvest of inverts for curio', 'Tourist diving/snorkeling', 'Sewage pollution', 'Industrial pollution', 'Commercial fishing', 
                           'Live food fishing', 'Yachts', 'Level of other impacts?', 'Is protection enforced?', 'Level of poaching?', 'Spearfishing?', 
                           'Commercial fishing?', 'Recreational fishing?', 'Invertebrate/shell collection?', 'Anchoring?', 'Diving?')
-  subsets[['anthro']] <- c("WATER.TEMP.AT.SURFACE","DYNAMITE.FISHING","POISON.FISHING","AQUARIUM.FISH.COLLECTION","HARVEST.OF.INVERTS.FOR.FOOD",
+  subsets[['anthro']] <- c("DYNAMITE.FISHING","POISON.FISHING","AQUARIUM.FISH.COLLECTION","HARVEST.OF.INVERTS.FOR.FOOD",
                             "HARVEST.OF.INVERTS.FOR.CURIO","TOURIST.DIVING.SNORKELING","SEWAGE.POLLUTION",
                             "INDUSTRIAL.POLLUTION",
                             'SILTATION','RECREATIONAL.FISHING','INVERTEBRATE.SHELL.COLLECTION', 'ANCHORING?', 
