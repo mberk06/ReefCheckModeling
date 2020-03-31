@@ -48,15 +48,15 @@ targetVars <- c('HC','SC','RK','NI','SNAPPER','LOBSTER','PARROTFISH','GROUPER.TO
 ######################
 # setup xs and y (only change these lines)
 df <- dfCaribbean
-y <- 'PENCIL.URCHIN'
+y <- 'BUTTERFLYFISH'
 df[,y] <- df[,y]*160
 tf <- 'YEAR' # DATE, WEEK, MONTH, QUARTER, BIANNUAL, YEAR
 
 # convert to aggregated TS
 df <- aggDF(df, y, timeFrame = tf)
-plot(df, type='l')
+plot(df, type='l', main=paste(c("Time Series of ", y, " \n(Daily Aggregator)"), collapse = ""))
 
 # call model and print output
-out <- timeSeries(df, y, h=100, lm=T, aa=T)
+out <- timeSeries(df, y, h=4, lm=T, aa=T)
 
 

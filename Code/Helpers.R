@@ -221,7 +221,8 @@ timeSeries <- function(df, y, h, lm=T, aa=T) {
     # train model
     fit <- lm(get(y) ~ DATE, data = train)
     print(paste0(c("Date coefficient", fit$coefficients[[2]]), collapse = ": "))
-    print(paste0(c("Adjusted R-Squared", summary(fit)[[9]]), collapse = ": "))
+    #print(paste0(c("Adjusted R-Squared", summary(fit)[[9]]), collapse = ": "))
+    print(round(cor(train[,y], fit$fitted.values),3))
     
     # get preds
     pred <- round(predict(fit, newdata=test))
@@ -258,11 +259,11 @@ timeSeries <- function(df, y, h, lm=T, aa=T) {
     
     # get traning accuracy
     #print(paste0(c("Training Accuracy: ", accuracy(aaPreds))))
-    print(paste0(c("Training Correlation", cor(train[,y], aaFit$fitted)), collapse = ": "))
+    print(paste0(c("Training Correlation", round(cor(train[,y], aaFit$fitted), 3), collapse = ": ")))
     
     # get testing accuracy
     if (dim(test)[1] >= h) {
-      print(paste0(c("Testing Correlation: ", cor(test[1:h,y], aaPreds$mean))))
+      print(paste0(c("Testing Correlation: ", round(cor(test[1:h,y], aaPreds$mean),3))))
     }
   }
 }
