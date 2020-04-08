@@ -34,7 +34,7 @@ dfCaribbean <- subset(originalDF, originalDF$COUNTRY %in% caribbeanCountries & o
 df <- dfCaribbean
 
 # limit to < 2019 (anomolous values for lobster, parrotfish) 
-df <- subset(df, as.Date(df$DATE) < as.Date('2019-01-01'))
+#df <- subset(df, as.Date(df$DATE) < as.Date('2016-01-01'))
 
 ######################
 # variable setup
@@ -48,15 +48,18 @@ targetVars <- c('HC','SC','RK','NI','SNAPPER','LOBSTER','PARROTFISH','GROUPER.TO
 ######################
 # setup xs and y (only change these lines)
 df <- dfCaribbean
-y <- 'BUTTERFLYFISH'
-df[,y] <- df[,y]*160
-tf <- 'YEAR' # DATE, WEEK, MONTH, QUARTER, BIANNUAL, YEAR
+y <- 'HC'
+#df[,y] <- df[,y]*160
+tf <- 'MONTH' # DATE, WEEK, MONTH, QUARTER, BIANNUAL, YEAR
 
 # convert to aggregated TS
 df <- aggDF(df, y, timeFrame = tf)
-plot(df, type='l', main=paste(c("Time Series of ", y, " \n(Daily Aggregator)"), collapse = ""))
+#df <- subset(df, df$DATE < 2016)
+
+# plot
+#par(mfrow=c(1,1))
+plot(df, type='l', main=paste(c("Time Series of Rock % Coverage \n(Annual Aggregator)"), collapse = ""))
+abline(lm(df[,y] ~ df$DATE), col="red") # regression line (y~x)
 
 # call model and print output
-out <- timeSeries(df, y, h=4, lm=T, aa=T)
-
-
+out <- timeSeries(df, y, h=12, lm=T, aa=T)

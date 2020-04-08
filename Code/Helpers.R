@@ -114,7 +114,7 @@ zipFunc <- function(df, xs, y, printAll=F) {
     plot(pred, test[,y], main=paste(c(y,'predicted against true')), xlab='yhat', ylab='y')
     abline(lm(test[,y] ~ pred), col="red") # regression line (y~x)
     text(x = 8, y = max(test[,y])-10, corStr, col = 'red', cex=0.8)#labels=paste0(c('r^2: ',rsquare)))
-    qqplot(pred, test[,y])
+    qqplot(pred, test[,y], xlab='Predicted y', ylab='True y')#, main='Snapper QQ Plot Predicted vs. True')
   }
   
   return (data.frame(y = test[,y], yPred = pred))
@@ -167,17 +167,29 @@ rfFunc <- function(df, xs, y, PDP=F, printAll=F) {
     plot(pred, test[,y], main=paste(c(y,'predicted against true')), xlab='yhat', ylab='y')
     abline(lm(test[,y] ~ pred), col="red") # regression line (y~x)
     text(x = 8, y = max(test[,y])-10, corStr, col = 'red', cex=0.8)#labels=paste0(c('r^2: ',rsquare)))
-    qqplot(pred, test[,y])
+    #qqplot(pred, test[,y], main=paste0('Butterfly Fish qqplot Predicted vs. True'), xlab='Predicted y', ylab="True y")
+    qqplot(pred, test[,y], xlab='Predicted y', ylab="True y")
   }
   
   # variable importance and PDP
   if (printAll) varImpPlot(fit)
   if (PDP) {
+    # get 2x2 plot
+    #par(mfrow=c(2,1))
+    
+    # get vars to iterate over
     xs <- unlist(strsplit(xs, "[+]"))
-    for (i in 1:length(xs)) {
+    idxs <- match(c("INDUSTRIAL.POLLUTION"),xs) 
+    #idxs <- match(c("TRASH.FISH.NETS"),xs) 
+    #idxs <- 1:length(xs) # all pdps
+    
+    # iterate through and plot
+    for (i in idxs) {
       partialPlot(fit, train[!is.na(train[,xs[i]]),], xs[i], 
                   xlab = xs[i], ylab = y,
-                  main = paste0(c("Partial Dependence on ", y, " vs. ", xs[i])))
+                  main = paste0(c("Partial Dependence of ", y, " vs. ", xs[i])),
+                  cex.main=1.2,
+                  cex.lab=1.2)
     }
   }
   
