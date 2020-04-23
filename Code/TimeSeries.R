@@ -48,9 +48,9 @@ targetVars <- c('HC','SC','RK','NI','SNAPPER','LOBSTER','PARROTFISH','GROUPER.TO
 ######################
 # setup xs and y (only change these lines)
 df <- dfCaribbean
-y <- 'HC'
+y <- 'RK'
 #df[,y] <- df[,y]*160
-tf <- 'MONTH' # DATE, WEEK, MONTH, QUARTER, BIANNUAL, YEAR
+tf <- 'YEAR' # DATE, WEEK, MONTH, QUARTER, BIANNUAL, YEAR
 
 # convert to aggregated TS
 df <- aggDF(df, y, timeFrame = tf)
@@ -62,4 +62,4 @@ plot(df, type='l', main=paste(c("Time Series of Rock % Coverage \n(Annual Aggreg
 abline(lm(df[,y] ~ df$DATE), col="red") # regression line (y~x)
 
 # call model and print output
-out <- timeSeries(df, y, h=12, lm=T, aa=T)
+out <- timeSeries(df, y, h=90, lm=F, aa=T)

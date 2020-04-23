@@ -38,19 +38,19 @@ b <- c(a, o)[1:(length(c(a,o))-1)] # both
 ######################
 # setup xs and y (only change these lines)
 df <- dfo 
-xs <- a
-#xs <- b[b != "AQUARIUM.FISH.COLLECTION"] # o, a, b
-y <- 'LOBSTER'
-#df[,y] <- df[,y]*100 # perform for substrate (dividing by 160 produces strange results) 
+#xs <- b
+xs <- b[b != "AQUARIUM.FISH.COLLECTION"] # o, a, b
+y <- 'SC'
+df[,y] <- df[,y]*100 # perform for substrate (dividing by 160 produces strange results) 
 # call model
 #out <- zipFunc(df, xs, y, printAll=T)
-#out <- poisFunc(df, xs, y, printAll=F)
+out <- poisFunc(df, xs, y, printAll=F)
 
 ######################
 # RF
 ######################
 # call model
-out <- rfFunc(df, xs, y, PDP=T, printAll=T)
+#out <- rfFunc(df, xs, y, PDP=T, printAll=T)
 
 #extra code
 #true <- out[,1]

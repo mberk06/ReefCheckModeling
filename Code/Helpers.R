@@ -19,6 +19,10 @@ pacman::p_load(forecast) # autoarima
 pacman::p_load(mice) # MICE
 pacman::p_load(lubridate) # truncate dates
 
+# change factor level contrasts to differences between factors
+options(contrasts=c('contr.treatment','contr.poly')) # default (used in the paper)
+#options(contrasts=c('contr.treatment','contr.treatment')) # use going forward
+
 ##########################
 ##########################
 # Poisson
@@ -175,11 +179,11 @@ rfFunc <- function(df, xs, y, PDP=F, printAll=F) {
   if (printAll) varImpPlot(fit)
   if (PDP) {
     # get 2x2 plot
-    #par(mfrow=c(2,1))
+    par(mfrow=c(1,2))
     
     # get vars to iterate over
     xs <- unlist(strsplit(xs, "[+]"))
-    idxs <- match(c("INDUSTRIAL.POLLUTION"),xs) 
+    idxs <- match(c("SNAPPER","GROUPER.TOTAL"),xs) 
     #idxs <- match(c("TRASH.FISH.NETS"),xs) 
     #idxs <- 1:length(xs) # all pdps
     
@@ -188,6 +192,8 @@ rfFunc <- function(df, xs, y, PDP=F, printAll=F) {
       partialPlot(fit, train[!is.na(train[,xs[i]]),], xs[i], 
                   xlab = xs[i], ylab = y,
                   main = paste0(c("Partial Dependence of ", y, " vs. ", xs[i])),
+                  col='#E46C53',
+                  lwd=2,
                   cex.main=1.2,
                   cex.lab=1.2)
     }
@@ -357,7 +363,7 @@ loadDF <- function(MICE=FALSE) {
   # iterate through columns and recode factors 
   for (c in names(df)) {
     if (c %in% f1) {
-      df[,c] <- factor(df[,c], levels=c('YES', 'NO'))
+      df[,c] <- factor(df[,c], levels=c('NO', 'YES'))
     } else if (c %in% f2) {
       df[,c] <- ordered(df[,c], levels=c('NEVER','OCCASIONALLY','OFTEN','ALWAYS'))
     } else if (c %in% f3) {
